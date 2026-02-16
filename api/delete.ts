@@ -13,32 +13,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!room || !file) return res.status(400).json({ error: 'Missing room or file name' });
 
-  const gun = new Gun({
-    peers: [
-      'https://gun-manhattan.herokuapp.com/gun',
-      'https://relay.peer.ooo/gun'
-    ],
-    web: false,
-    radisk: false,
-    localStorage: false
-  });
-
-  const db = gun.get('livesync-v1').get(room as string).get('files');
-  let foundId = null;
-
-  await new Promise(resolve => {
-    db.map().once((data: any, id: string) => {
-      if (data && data.name === file) {
-        foundId = id;
-        db.get(id).put(null as any, () => resolve(null));
-      }
+  try {
+    const gun = new Gun({
+      peers: [
+        'https://gun-manhattan.herokuapp.com/gun',
+        'https://relay.peer.ooo/gun',
+        'https://gun-us.herokuapp.com/gun'
+      ],
+      web: false,
+      radisk: false,
+      localStorage: false,
+      axe: false,
+      file: false
     });
-    setTimeout(resolve, 2500);
-  });
 
-  if (foundId) {
-    res.status(200).json({ success: true, message: `File '${file}' deleted from room '${room}'` });
-  } else {
-    res.status(404).json({ error: 'File not found or delete signal timed out' });
+    const db = gun.get('livesync-v1').get(room as string).get('files');
+    let foundId = null;
+
+    await new Promise(resolve => {
+      const timeout = setTimeout(resolve, 4000);
+      db.map().once((data: any, id: string) => {
+        if (data && data.name === file) {
+          foundId = id;
+          db.get(id).put(null as any, () => {
+            clearTimeout(timeout);
+            resolve(null);
+          });
+        }
+      });
+    });
+
+    if (foundId) {
+      res.status(200).json({ success: true, message: `File '${file}' deleted successfully` });
+    } else {
+      res.status(404).json({ error: 'File not found', message: 'Could not locate the file to delete in the P2P mesh.' });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: 'Delete failed', details: err.message });
   }
 }

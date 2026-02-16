@@ -25,13 +25,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       web: false,
       radisk: false,
       localStorage: false,
-      axe: false
+      axe: false,
+      file: false
     });
 
     const filesRef = gun.get('livesync-v1').get(room).get('files');
     let existingId: string | null = null;
 
-    // Discovery phase
+    // Discovery phase - try to find if file already exists
     await new Promise(resolve => {
       const timeout = setTimeout(resolve, 2000);
       filesRef.map().once((data, id) => {
@@ -52,10 +53,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       type: filename.split('.').pop()?.toUpperCase() || 'TXT'
     };
 
+    // Put data into the mesh
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        resolve({ ok: true, note: 'Timed out waiting for ACK, but data sent' });
-      }, 4000);
+        resolve({ ok: true, note: 'Signal broadcasted' });
+      }, 5000);
 
       filesRef.get(id).put(fileData as any, (ack: any) => {
         if (ack.err) {

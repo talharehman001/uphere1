@@ -22,14 +22,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       web: false,
       radisk: false,
       localStorage: false,
-      axe: false
+      axe: false,
+      file: false
     });
 
     let fileContent: string | null = null;
     const db = gun.get('livesync-v1').get(room as string).get('files');
 
     await new Promise(resolve => {
-      const timeout = setTimeout(resolve, 4500);
+      const timeout = setTimeout(resolve, 6000);
       
       db.map().once((data: any) => {
         if (data && data.name === file) {
@@ -43,7 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (fileContent === null) {
       return res.status(404).json({ 
         error: 'File not found', 
-        message: `Could not find file '${file}' in room '${room}'. Check for typos or wait for sync.` 
+        message: `Could not find file '${file}' in room '${room}'. P2P propagation might take a few seconds.` 
       });
     }
     
