@@ -11,7 +11,8 @@ import ApiDocs from './components/ApiDocs';
 const gun = Gun({
   peers: [
     'https://gun-manhattan.herokuapp.com/gun',
-    'https://relay.peer.ooo/gun'
+    'https://relay.peer.ooo/gun',
+    'https://gun-us.herokuapp.com/gun'
   ]
 });
 
