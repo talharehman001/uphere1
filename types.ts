@@ -8,7 +8,7 @@ export interface FileItem {
   size: number;
 }
 
-export type ViewState = 'explorer' | 'editor';
+export type ViewState = 'explorer' | 'editor' | 'api';
 
 export interface AppState {
   files: FileItem[];

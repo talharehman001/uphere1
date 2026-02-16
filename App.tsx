@@ -5,6 +5,7 @@ import { FileItem, ViewState } from './types';
 import FileExplorer from './components/FileExplorer';
 import FileEditor from './components/FileEditor';
 import Header from './components/Header';
+import ApiDocs from './components/ApiDocs';
 
 // Initialize Gun with public relay peers
 const gun = Gun({
@@ -116,32 +117,56 @@ const App: React.FC = () => {
     }
   }, [db, files]);
 
+  // Expose Global API for developers
+  useEffect(() => {
+    (window as any).liveSyncAPI = {
+      roomId,
+      getFiles: () => files,
+      updateFile: (id: string, content: string) => handleSaveFileContent(id, content),
+      deleteFile: (id: string) => handleDelete(id),
+      uploadRaw: (name: string, content: string) => {
+        const id = Math.random().toString(36).substr(2, 9);
+        handleUpload([{
+          id,
+          name,
+          content,
+          lastModified: Date.now(),
+          size: new TextEncoder().encode(content).length,
+          type: name.split('.').pop()?.toUpperCase() || 'TXT'
+        }]);
+        return id;
+      }
+    };
+  }, [files, roomId, handleSaveFileContent, handleDelete, handleUpload]);
+
   const currentFile = files.find(f => f.id === currentFileId);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0f1115] text-slate-300">
       <Header 
         view={view} 
-        onBack={() => setView('explorer')} 
+        onViewChange={(v) => setView(v)}
         roomName={roomId}
       />
       
       <main className="flex-1 overflow-hidden relative">
-        {view === 'explorer' ? (
+        {view === 'explorer' && (
           <FileExplorer 
             files={files} 
             onUpload={handleUpload}
             onDelete={handleDelete}
             onEdit={handleEdit}
           />
-        ) : (
-          currentFile && (
-            <FileEditor 
-              file={currentFile} 
-              onSave={(content: string) => handleSaveFileContent(currentFile.id, content)}
-              onClose={() => setView('explorer')}
-            />
-          )
+        )}
+        {view === 'editor' && currentFile && (
+          <FileEditor 
+            file={currentFile} 
+            onSave={(content: string) => handleSaveFileContent(currentFile.id, content)}
+            onClose={() => setView('explorer')}
+          />
+        )}
+        {view === 'api' && (
+          <ApiDocs files={files} roomId={roomId} />
         )}
       </main>
 
